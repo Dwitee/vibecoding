@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from textToVfx import textToVfx
 from keywordExtractor import extract_sound_keywords
 import os
@@ -27,7 +27,11 @@ def generateVfxFromText():
     textToVfx(prompts, output_dir)
 
     generated_files = [f for f in os.listdir(output_dir) if f.endswith('.wav')]
-    return jsonify({'generated_files': generated_files})
+    if not generated_files:
+        return jsonify({'error': 'No audio generated'}), 500
+
+    first_file_path = os.path.join(output_dir, generated_files[0])
+    return send_file(first_file_path, as_attachment=True)
 
 if __name__ == '__main__':
     app.run(debug=True)
