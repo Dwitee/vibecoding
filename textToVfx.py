@@ -39,7 +39,7 @@ def generateTangoVfx(prompts, output_dir):
     for prompt in prompts:
         try:
             print(f"🎧 [TangoFlux] Generating: {prompt}")
-            audio = model.generate(prompt, steps=50, duration=10)
+            audio = model.generate(prompt, steps=10, duration=3)
 
             # Sanitize filename
             file_name = re.sub(r'[^\w\-_.]', '_', prompt) + ".wav"
