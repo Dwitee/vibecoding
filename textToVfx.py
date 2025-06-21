@@ -31,5 +31,5 @@ def textToVfx(prompts, output_dir="generated_audio"):
         # Save audio
         file_name = prompt.replace(" ", "_") + ".wav"
         file_path = os.path.join(output_dir, file_name)
-        torchaudio.save(file_path, torch.tensor(audio).unsqueeze(0), sample_rate)
+        torchaudio.save(file_path, torch.tensor(audio).unsqueeze(0), sample_rate, format="wav")
         print(f"✅ Saved: {file_path}")
