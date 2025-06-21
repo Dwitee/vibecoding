@@ -3,6 +3,7 @@ import re
 import torch
 import torchaudio
 from diffusers import AudioLDM2Pipeline
+from transformers import TANGOProcessor, TANGOForConditionalGeneration
 
 def textToVfx(prompts, output_dir):
     os.makedirs(output_dir, exist_ok=True)
