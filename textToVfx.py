@@ -3,7 +3,7 @@ import re
 import torch
 import torchaudio
 # from diffusers import AudioLDM2Pipeline
-from transformers import TANGOProcessor, TANGOForConditionalGeneration
+from tangoflux import TangoFluxInference
 
 # def textToVfx(prompts, output_dir):
 #     os.makedirs(output_dir, exist_ok=True)
@@ -35,26 +35,17 @@ from transformers import TANGOProcessor, TANGOForConditionalGeneration
 def generateTangoVfx(prompts, output_dir):
     os.makedirs(output_dir, exist_ok=True)
 
-    processor = TANGOProcessor.from_pretrained("nttcslab/tango")
-    model = TANGOForConditionalGeneration.from_pretrained("nttcslab/tango")
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"🔧 [TANGO] Using device: {device}")
-    model = model.to(device)
-
+    model = TangoFluxInference(name='declare-lab/TangoFlux')
     for prompt in prompts:
         try:
-            print(f"🎧 [TANGO] Generating: {prompt}")
-            inputs = processor(text=prompt, return_tensors="pt")
-            inputs = {k: v.to(model.device) for k, v in inputs.items()}
-            waveform = model.generate(**inputs)
-            audio = waveform.cpu().squeeze().numpy()
-            sample_rate = 16000
+            print(f"🎧 [TangoFlux] Generating: {prompt}")
+            audio = model.generate(prompt, steps=50, duration=10)
 
             # Sanitize filename
             file_name = re.sub(r'[^\w\-_.]', '_', prompt) + ".wav"
             file_path = os.path.join(output_dir, file_name)
 
             # Save the generated audio
-            torchaudio.save(file_path, torch.tensor(audio).unsqueeze(0), sample_rate)
+            torchaudio.save(file_path, torch.tensor(audio).unsqueeze(0), 44100)
         except Exception as e:
-            print(f"❌ [TANGO] Failed to generate audio for prompt '{prompt}': {e}")
+            print(f"❌ [TangoFlux] Failed to generate audio for prompt '{prompt}': {e}")
