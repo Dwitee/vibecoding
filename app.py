@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, send_file
-from textToVfx import textToVfx
+from textToVfx import generateTangoVfx
 from keywordExtractor import extract_sound_keywords
 import os
 
@@ -24,7 +24,7 @@ def generateVfxFromText():
     if not prompts:
         return jsonify({'error': 'No prompts provided'}), 400
 
-    textToVfx(prompts, output_dir)
+    generateTangoVfx(prompts, output_dir)
 
     generated_files = [f for f in os.listdir(output_dir) if f.endswith('.wav')]
     if not generated_files:
