@@ -6,8 +6,12 @@ def textToVfx(prompts, output_dir="generated_audio"):
 
     # Load model from Hugging Face
     repo_id = "cvssp/audioldm-s-full-v2"
-    pipe = AudioLDMPipeline.from_pretrained(repo_id, torch_dtype=torch.float16)
-    pipe = pipe.to("cpu")  # or "cuda" if GPU is available
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    pipe = AudioLDMPipeline.from_pretrained(repo_id)
+    if device == "cuda":
+        pipe = pipe.to(device).to(torch.float16)
+    else:
+        pipe = pipe.to(device)
 
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
@@ -17,7 +21,7 @@ def textToVfx(prompts, output_dir="generated_audio"):
         print(f"🎧 Generating: {prompt}")
         output = pipe(
             prompt=prompt,
-            num_inference_steps=200,
+            num_inference_steps=50,
             audio_length_in_s=5.0  # 5 seconds per clip
         )
 
