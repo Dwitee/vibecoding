@@ -1,8 +1,19 @@
 from flask import Flask, request, jsonify
 from textToVfx import textToVfx
+from keywordExtractor import extract_sound_keywords
 import os
 
 app = Flask(__name__)
+
+@app.route('/generateKeywordsFromText', methods=['POST'])
+def generateKeywordsFromText():
+    data = request.get_json()
+    text = data.get('text', '')
+    if not text:
+        return jsonify({'error': 'No text provided'}), 400
+    
+    keywords = extract_sound_keywords(text)
+    return jsonify({'keywords': keywords})
 
 @app.route('/generateVfxFromText', methods=['POST'])
 def generateVfxFromText():
