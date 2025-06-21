@@ -1,21 +1,25 @@
 import os
-from flask import Flask, request, send_file, jsonify
-from textToVfx import textToVfx
+import torch
+import torchaudio
+from diffusers import AudioLDM2Pipeline
 
-@app.route("/generateVfxFromText", methods=["POST"])
-def generateVfxFromText():
-    data = request.get_json()
-    prompts = data.get("prompts", [])
-    output_dir = "generated_audio"
+def textToVfx(prompts, output_dir):
+    os.makedirs(output_dir, exist_ok=True)
     
-    # Generate audio from prompts
-    textToVfx(prompts, output_dir)
-    
-    # Return the first generated file as response
-    file_name = prompts[0].replace(" ", "_") + ".wav"
-    file_path = os.path.join(output_dir, file_name)
+    # Load the pretrained model
+    pipe = AudioLDM2Pipeline.from_pretrained(
+        "cvssp/audioldm-s",
+        torch_dtype=torch.float32  # Use float32 if float16 causes issues
+    )
+    pipe = pipe.to("cuda" if torch.cuda.is_available() else "cpu")
 
-    if os.path.exists(file_path):
-        return send_file(file_path, as_attachment=True)
-    else:
-        return jsonify({"error": "File not found"}), 404
+    for prompt in prompts:
+        print(f"🎧 Generating: {prompt}")
+        audio = pipe(prompt, num_inference_steps=50).audios[0]
+        sample_rate = 16000
+
+        file_name = prompt.replace(" ", "_") + ".wav"
+        file_path = os.path.join(output_dir, file_name)
+
+        # Save the generated audio
+        torchaudio.save(file_path, torch.tensor(audio).unsqueeze(0), sample_rate)
