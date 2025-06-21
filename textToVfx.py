@@ -5,7 +5,7 @@ def textToVfx(prompts, output_dir="generated_audio"):
     import os
 
     # Load model from Hugging Face
-    repo_id = "cvssp/audioldm2"
+    repo_id = "cvssp/audioldm-s-full"
     pipe = AudioLDM2Pipeline.from_pretrained(repo_id, torch_dtype=torch.float16)
     pipe = pipe.to("cpu")  # or "cuda" if GPU is available
 
