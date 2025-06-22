@@ -139,8 +139,8 @@ def generateTTS():
 
     try:
         project_id = "secure-garden-460600-u4"
-        location = "us-east4"
-        model_name = "tts-1"
+        model_name = "text-to-speech"
+        location = "us-central1"
         api_endpoint = f"{location}-aiplatform.googleapis.com"
 
         client_options = {"api_endpoint": api_endpoint}
