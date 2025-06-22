@@ -6,6 +6,8 @@ import re
 import json
 from google import genai
 from google.genai import types
+import tempfile
+from google.cloud import storage
 
 app = Flask(__name__)
 
@@ -67,6 +69,8 @@ def generateBackgroundMusic():
     mood = data.get('mood', 'calm')
     duration = data.get('duration', 10)  # duration in seconds
 
+    print(f"[DEBUG] Received request for mood: {mood}, duration: {duration}")
+
     genai_client = genai.Client(
         vertexai=True,
         project="secure-garden-460600-u4",
@@ -74,20 +78,38 @@ def generateBackgroundMusic():
     )
 
     prompt = f"Create a {duration}-second instrumental background music with a {mood} mood."
+    print(f"[DEBUG] Generated prompt for Lyria: {prompt}")
 
     try:
         model = genai_client.models.get("models/lyria")
         response = model.generate_content(prompt)
+        print(f"[DEBUG] Lyria model response received.")
 
         if hasattr(response, 'candidates') and response.candidates:
             audio_data = response.candidates[0].audio
-            output_path = f"background_music_{mood}_{duration}.wav"
-            with open(output_path, "wb") as f:
-                f.write(audio_data)
-            return send_file(output_path, as_attachment=True)
+
+            if hasattr(audio_data, 'uri'):
+                uri = audio_data.uri
+                print(f"[DEBUG] Received GCS URI: {uri}")
+                bucket_name, blob_name = uri.replace("gs://", "").split("/", 1)
+
+                storage_client = storage.Client()
+                bucket = storage_client.bucket(bucket_name)
+                blob = bucket.blob(blob_name)
+
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
+                    print(f"[DEBUG] Downloading audio file to: {temp_audio.name}")
+                    blob.download_to_filename(temp_audio.name)
+                    print(f"[DEBUG] Audio file downloaded successfully.")
+                    return send_file(temp_audio.name, as_attachment=True)
+            else:
+                print("[ERROR] No URI in audio data.")
+                return jsonify({'error': 'No downloadable URI found in audio data'}), 500
         else:
+            print("[ERROR] No candidates in Lyria response.")
             return jsonify({'error': 'No audio generated'}), 500
     except Exception as e:
+        print(f"[ERROR] Exception during background music generation: {e}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
