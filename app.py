@@ -8,6 +8,7 @@ from google import genai
 from google.genai import types
 import tempfile
 from google.cloud import storage
+from vertexai.generative_models import GenerativeModel
 
 app = Flask(__name__)
 
@@ -81,15 +82,14 @@ def generateBackgroundMusic():
     print(f"[DEBUG] Generated prompt for Lyria: {prompt}")
 
     try:
-        model = genai_client.models.get("models/lyria-002")
+        model = GenerativeModel(model_name="models/lyria")
         response = model.generate_content(prompt)
         print(f"[DEBUG] Lyria model response received.")
 
         if hasattr(response, 'candidates') and response.candidates:
-            audio_data = response.candidates[0].audio
-
-            if hasattr(audio_data, 'uri'):
-                uri = audio_data.uri
+            audio_part = response.candidates[0].content.parts[0]
+            if hasattr(audio_part, 'file_data') and hasattr(audio_part.file_data, 'file_uri'):
+                uri = audio_part.file_data.file_uri
                 print(f"[DEBUG] Received GCS URI: {uri}")
                 bucket_name, blob_name = uri.replace("gs://", "").split("/", 1)
 
@@ -103,7 +103,7 @@ def generateBackgroundMusic():
                     print(f"[DEBUG] Audio file downloaded successfully.")
                     return send_file(temp_audio.name, as_attachment=True)
             else:
-                print("[ERROR] No URI in audio data.")
+                print("[ERROR] No file URI in audio part.")
                 return jsonify({'error': 'No downloadable URI found in audio data'}), 500
         else:
             print("[ERROR] No candidates in Lyria response.")
