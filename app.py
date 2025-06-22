@@ -61,5 +61,34 @@ def classifyStoryTone():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/generateBackgroundMusic', methods=['POST'])
+def generateBackgroundMusic():
+    data = request.get_json()
+    mood = data.get('mood', 'calm')
+    duration = data.get('duration', 10)  # duration in seconds
+
+    genai_client = genai.Client(
+        vertexai=True,
+        project="secure-garden-460600-u4",
+        location="us-east4",
+    )
+
+    prompt = f"Create a {duration}-second instrumental background music with a {mood} mood."
+
+    try:
+        model = genai_client.models.get("models/lyria")
+        response = model.generate_content(prompt)
+
+        if hasattr(response, 'candidates') and response.candidates:
+            audio_data = response.candidates[0].audio
+            output_path = f"background_music_{mood}_{duration}.wav"
+            with open(output_path, "wb") as f:
+                f.write(audio_data)
+            return send_file(output_path, as_attachment=True)
+        else:
+            return jsonify({'error': 'No audio generated'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
