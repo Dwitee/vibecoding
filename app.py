@@ -48,7 +48,7 @@ def classifyStoryTone():
     genai_client = genai.Client(
         vertexai=True,
         project="secure-garden-460600-u4",
-        location="europe-west2-c",
+        location="us-east4",
     )
 
     prompt = f"Classify the following story into one of these categories: bedtime, horror, joke, thriller, or unknown.\n\nStory:\n{text}\n\nRespond with only the label."
