@@ -81,7 +81,7 @@ def generateBackgroundMusic():
     print(f"[DEBUG] Generated prompt for Lyria: {prompt}")
 
     try:
-        model = genai_client.models.get(name="models/lyria-002")
+        model = genai_client.models.get("models/lyria-002")
         response = model.generate_content(prompt)
         print(f"[DEBUG] Lyria model response received.")
 
