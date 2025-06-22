@@ -125,6 +125,9 @@ def generateBackgroundMusic():
 
 
 # === New TTS route ===
+from vertexai import model_garden
+import vertexai
+
 @app.route('/generateTTS', methods=['POST'])
 def generateTTS():
     data = request.get_json()
@@ -138,37 +141,31 @@ def generateTTS():
     print(f"[DEBUG] Received TTS request with text: {text}, tone: {tone}, voice: {voice}")
 
     try:
-        project_id = "secure-garden-460600-u4"
-        model_name = "text-to-speech"
-        location = "us-central1"
-        api_endpoint = f"{location}-aiplatform.googleapis.com"
+        vertexai.init(project="secure-garden-460600-u4", location="us-east4")
 
-        client_options = {"api_endpoint": api_endpoint}
-        client = aiplatform.gapic.PredictionServiceClient(client_options=client_options)
+        model = model_garden.OpenModel("nari-labs/dia-1.6b@dia-1.6b")
+        endpoint = model.deploy()
 
-        prompt = f"Generate a {tone} {voice} voice for the following text: {text}"
-        instance = json_format.ParseDict({"text": prompt}, Value())
-        instances = [instance]
-        parameters = json_format.ParseDict({}, Value())
+        full_prompt = f"[S1] ({tone}, {voice}) {text}"
+        instances = [{
+            "text": full_prompt
+        }]
+        parameters = {
+            "temperature": 1.3,
+            "top_p": 0.95,
+            "config_scale": 0.3,
+        }
 
-        endpoint_path = f"projects/{project_id}/locations/{location}/publishers/google/models/{model_name}"
-        print(f"[DEBUG] Calling Vertex AI TTS endpoint: {endpoint_path}")
+        print(f"[DEBUG] Calling Dia model with prompt: {full_prompt}")
+        response = endpoint.predict(instances=instances, parameters=parameters)
+        audio_bytes = base64.b64decode(response.predictions[0]["audio"])
 
-        response = client.predict(endpoint=endpoint_path, instances=instances, parameters=parameters)
-        predictions = response.predictions
-        print(f"[DEBUG] Returned {len(predictions)} TTS samples")
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
+            temp_audio.write(audio_bytes)
+            temp_audio.flush()
+            print(f"[DEBUG] Saved TTS output to temp file: {temp_audio.name}")
+            return send_file(temp_audio.name, as_attachment=True)
 
-        if predictions:
-            audio_b64 = predictions[0].get("bytesBase64Encoded")
-            audio_bytes = base64.b64decode(audio_b64)
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
-                temp_audio.write(audio_bytes)
-                temp_audio.flush()
-                print(f"[DEBUG] Saved TTS output to temp file: {temp_audio.name}")
-                return send_file(temp_audio.name, as_attachment=True)
-        else:
-            print("[ERROR] No predictions returned from TTS model")
-            return jsonify({'error': 'No audio generated'}), 500
     except Exception as e:
         print(f"[ERROR] Exception during TTS generation: {e}")
         return jsonify({'error': str(e)}), 500
