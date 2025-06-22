@@ -8,6 +8,7 @@ from google import genai
 from google.genai import types
 import tempfile
 from google.cloud import storage
+import vertexai
 from vertexai.generative_models import GenerativeModel
 
 app = Flask(__name__)
@@ -82,7 +83,8 @@ def generateBackgroundMusic():
     print(f"[DEBUG] Generated prompt for Lyria: {prompt}")
 
     try:
-        model = GenerativeModel(model_name="models/lyria")
+        vertexai.init(project="secure-garden-460600-u4", location="us-east4")
+        model = GenerativeModel("models/lyria")
         response = model.generate_content(prompt)
         print(f"[DEBUG] Lyria model response received.")
 

@@ -10,5 +10,6 @@ requests>=2.31.0
 soundfile>=0.12.1
 tangoflux
 google-generativeai
+google-cloud-aiplatform
 google-cloud-storage
 protobuf
