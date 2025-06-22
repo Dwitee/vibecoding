@@ -10,6 +10,12 @@ import tempfile
 from google.cloud import storage
 import vertexai
 from vertexai.generative_models import GenerativeModel
+from typing import Dict
+from google.protobuf import json_format
+from google.protobuf.struct_pb2 import Value
+import base64
+import io
+from google.cloud import aiplatform
 
 app = Flask(__name__)
 
@@ -83,32 +89,35 @@ def generateBackgroundMusic():
     print(f"[DEBUG] Generated prompt for Lyria: {prompt}")
 
     try:
-        vertexai.init(project="secure-garden-460600-u4", location="us-east4")
-        model = GenerativeModel("models/lyria")
-        response = model.generate_content(prompt)
-        print(f"[DEBUG] Lyria model response received.")
+        from google.cloud import aiplatform
+        from google.protobuf import json_format
+        from google.protobuf.struct_pb2 import Value
 
-        if hasattr(response, 'candidates') and response.candidates:
-            audio_part = response.candidates[0].content.parts[0]
-            if hasattr(audio_part, 'file_data') and hasattr(audio_part.file_data, 'file_uri'):
-                uri = audio_part.file_data.file_uri
-                print(f"[DEBUG] Received GCS URI: {uri}")
-                bucket_name, blob_name = uri.replace("gs://", "").split("/", 1)
+        project_id = "secure-garden-460600-u4"
+        client_options = {"api_endpoint": "us-central1-aiplatform.googleapis.com"}
+        client = aiplatform.gapic.PredictionServiceClient(client_options=client_options)
 
-                storage_client = storage.Client()
-                bucket = storage_client.bucket(bucket_name)
-                blob = bucket.blob(blob_name)
+        instance = json_format.ParseDict({"prompt": prompt}, Value())
+        instances = [instance]
+        parameters = json_format.ParseDict({}, Value())
 
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
-                    print(f"[DEBUG] Downloading audio file to: {temp_audio.name}")
-                    blob.download_to_filename(temp_audio.name)
-                    print(f"[DEBUG] Audio file downloaded successfully.")
-                    return send_file(temp_audio.name, as_attachment=True)
-            else:
-                print("[ERROR] No file URI in audio part.")
-                return jsonify({'error': 'No downloadable URI found in audio data'}), 500
+        endpoint_path = f"projects/{project_id}/locations/us-central1/publishers/google/models/lyria-002"
+        print(f"[DEBUG] Calling Vertex AI endpoint: {endpoint_path}")
+
+        response = client.predict(endpoint=endpoint_path, instances=instances, parameters=parameters)
+        predictions = response.predictions
+        print(f"[DEBUG] Returned {len(predictions)} samples")
+
+        if predictions:
+            audio_b64 = predictions[0].get("bytesBase64Encoded")
+            audio_bytes = base64.b64decode(audio_b64)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
+                temp_audio.write(audio_bytes)
+                temp_audio.flush()
+                print(f"[DEBUG] Saved background music to temp file: {temp_audio.name}")
+                return send_file(temp_audio.name, as_attachment=True)
         else:
-            print("[ERROR] No candidates in Lyria response.")
+            print("[ERROR] No predictions returned from Lyria")
             return jsonify({'error': 'No audio generated'}), 500
     except Exception as e:
         print(f"[ERROR] Exception during background music generation: {e}")
