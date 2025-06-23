@@ -1,11 +1,22 @@
 # vibecoding
 hackathon for encode  vibe coding 
 
-Once upon a time, in a cozy forest filled with whispering trees and glowing fireflies,
-a little bunny named Lulu couldn't sleep. She tiptoed outside and found a gentle owl sitting on a branch.
-“Why can’t I sleep?” asked Lulu. The owl hooted softly, “Sometimes, you just need a bedtime wish.”
-So Lulu closed her eyes, made a tiny wish on a twinkling star, and felt a warm breeze wrap around her like a hug.
-The wind whispered lullabies as the trees swayed gently, and the fireflies danced above her like sparkling dreams.
-Lulu yawned, curled up in the soft moss, and drifted into a peaceful sleep.
-Good night, little one.
+ an AI-powered immersive storytelling platform that transforms any short story into an expressive audio experience—complete with narrated speech, emotion-aware background music, and synchronized VFX sound effects triggered by story keywords.
+What it does:
+Classifies the story tone using Gemini Flash (Vertex AI)
+
+
+Extracts sound-worthy keywords via NLTK NLP
+
+
+Generates 10-sec mood-based background music with lyria-002 (Vertex AI Media Studio)
+
+
+Synthesizes expressive narration using nari-labs/dia-1.6b (Vertex AI Model Garden)
+
+
+Syncs contextual VFX using TangoFlux (Hugging Face) or local .wav assets
+
+
+Presented in an intuitive Gradio frontend with real-time playback controls
 
